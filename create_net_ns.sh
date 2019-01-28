@@ -45,6 +45,21 @@ then
 	fi
 fi
 
+# Enable IP-forwarding.
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# Flush forward rules, policy ACCEPT by default.
+iptables -F FORWARD
+iptables -P FORWARD ACCEPT
+# Otherwise you have to allow forwarding between every possible eth0 and v-eth1.
+#iptables -A FORWARD -i $GW_INTF -o $INTF_ROOT -j ACCEPT
+#iptables -A FORWARD -o $GW_INTF -i $INTF_ROOT -j ACCEPT
+
+# Flush nat rules if internet access is requested
+if [[ $OUT == 1 ]]
+then
+	iptables -t nat -F
+fi
 
 i=1
 while [[ $i -le $N_NS ]]
@@ -73,34 +88,17 @@ do
 	$NS ip link set lo up
 	# in the ns, set the default gw
 	$NS ip route add default via $ADDR_ROOT
+	# Share internet access between host and NS if requested
+	if [[ $OUT == 1 ]]
+	then
+		# Enable masquerading
+		iptables -t nat -A POSTROUTING -s $VETH_NET -o $GW_INTF -j MASQUERADE
+		# set up the dns for the ns to have full internet access
+		mkdir -p /etc/netns/$NS_NAME/
+		echo 'nameserver 8.8.8.8' > /etc/netns/$NS_NAME/resolv.conf
+	fi
 	((i = i + 1))
 done
-
 # list namespaces
 ip netns
-
-# Enable IP-forwarding.
-echo 1 > /proc/sys/net/ipv4/ip_forward
-
-# Flush forward rules, policy DROP by default.
-iptables -P FORWARD ACCEPT
-# todo only once
-#iptables -F FORWARD
-# Flush nat rules.
-# todo ony once
-# iptables -t nat -F
-
-# Allow forwarding between eth0 and v-eth1.
-#iptables -A FORWARD -i $GW_INTF -o $INTF_ROOT -j ACCEPT
-#iptables -A FORWARD -o $GW_INTF -i $INTF_ROOT -j ACCEPT
-
-# Share internet access between host and NS.
-if [ $OUT == 1 ]
-then
-	# Enable masquerading
-	iptables -t nat -A POSTROUTING -s $VETH_NET -o $GW_INTF -j MASQUERADE
-	# set up the dns for the ns to have full internet access
-	mkdir -p /etc/netns/$NS_NAME/
-	echo 'nameserver 8.8.8.8' > /etc/netns/$NS_NAME/resolv.conf
-fi
 
