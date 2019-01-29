@@ -3,22 +3,28 @@
 N_NS=0
 OUT=0
 GW_INTF=""
+OPEN_BASH=0
+FIRST_SCRIPT=""
 HELP="Create Network Namespaces that can communicate between them. Options:\n
 -h help\n
 -n number of ns\n
--o 1 if the ns must have access to internet. Nothing or other values means no\n
--i intf to use as gateway for internet access. If o is 1, then an intf must be specified.
+-o if the ns must have access to internet\n
+-i intf to use as gateway for internet access. If o is 1, then an intf must be specified.\n
+-b open a new bash (terminal) for each ns after creation\n
+-f run a script for each ns after creation. if b, the script is run in the new terminal
 "
 
 # : means that the option need an argument
-while getopts hn:o:i: option
+while getopts n:i:f:obh option
 do
 case "${option}"
 in
 h) echo -e $HELP; exit;;
 n) N_NS=${OPTARG};;
-o) OUT=${OPTARG};;
+o) OUT=1;;
 i) GW_INTF=${OPTARG};;
+b) OPEN_BASH=1;;
+f) FIRST_SCRIPT=${OPTARG};;
 esac
 done
 
@@ -30,17 +36,15 @@ fi
 if [[ $N_NS -lt 1 ]]
 then
 	echo "n must be > 0"
-	echo -e $HELP
 	exit
 fi
 
 if [[ $OUT == 1 ]]
 then
-	ALL_INTF=$(ls -1 /sys/class/net | sed 's/lo//')
+	ALL_INTF=$(ls -1 /sys/class/net | sed '/lo/d')
 	if [[ $GW_INTF == "" ]]
 	then
-		echo "Missing -i value. Choose one of $ALL_INTF"
-		echo -e $HELP
+		echo -e "Missing -i value. Choose one of:\n$ALL_INTF"
 		exit
 	fi
 fi
@@ -99,6 +103,38 @@ do
 	fi
 	((i = i + 1))
 done
-# list namespaces
-ip netns
+
+
+if [[ $OPEN_BASH == 1 ]]
+then
+	i=1
+	while [[ $i -le $N_NS ]]
+	do	
+		export FIRST_SCRIPT		
+		gnome-terminal -- ip netns exec ns$i bash -c 'ip netns identify; $FIRST_SCRIPT; /bin/bash' &
+		((i = i + 1))
+	done
+else
+	if [[ -n "$FIRST_SCRIPT" ]]
+	then
+		i=1
+		while [[ $i -le $N_NS ]]
+		do
+			echo "Executing $FIRST_SCRIPT in ns$1"
+			ip netns exec ns$i $FIRST_SCRIPT
+			((i = i + 1))
+		done
+	fi
+fi
+
+
+
+
+
+# open terminals if requested and run the first command
+# gnome-terminal -- ip netns exec ns2 bash -c 'ifconfig;bash'
+
+
+
+
 
