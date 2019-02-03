@@ -1,17 +1,16 @@
 #!/bin/bash
 
 N_NS=0
-OUT=0
 GW_INTF=""
 OPEN_BASH=0
+OUT=0
 FIRST_SCRIPT=""
-HELP="Create Network Namespaces that can communicate between them. Options:\n
--h help\n
--n number of ns\n
--o if the ns must have access to internet\n
--i intf to use as gateway for internet access. If o is 1, then an intf must be specified.\n
--b open a new bash (terminal) for each ns after creation\n
--f run a script for each ns after creation. if b, the script is run in the new terminal
+HELP="Create Network Namespaces that can communicate between them. Options:
+    -h: display the help message
+    -n number: number of namespaces to be created
+    -i intf_name: network interface to be used as gateway (if any)
+    -b: open a new bash (terminal) for each namespace
+    -f script: run script in each namespace. If -b is passed, script is run in the new terminals
 "
 
 # : means that the option need an argument
@@ -21,8 +20,7 @@ case "${option}"
 in
 h) echo -e $HELP; exit;;
 n) N_NS=${OPTARG};;
-o) OUT=1;;
-i) GW_INTF=${OPTARG};;
+i) OUT=1; GW_INTF=${OPTARG};;
 b) OPEN_BASH=1;;
 f) FIRST_SCRIPT=${OPTARG};;
 esac
