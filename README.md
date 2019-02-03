@@ -1,14 +1,13 @@
-# network_namespaces
+# Network Namespaces
 Automation of namespace creation
 
-./create_net_ns.sh
+`./create_net_ns.sh`
 Create Network Namespaces that can communicate between them. Options:
--h help
--n number of ns
--o if the ns must have access to internet
--i intf to use as gateway for internet access. If o is 1, then an intf must be specified.
--b open a new bash (terminal) for each ns after creation
--f run a script for each ns after creation. if b, the script is run in the new terminal
+* -h: display the help message
+* -n `number`: number of namespaces to be created
+* -i `intf_name`: network interface to be used as gateway (if any)
+* -b: open a new bash (terminal) for each namespace
+* -f `script`: run `script` in each namespace. If -b is passed, `script` is run in the new terminals
 
-./clean_sys.sh
+`./clean_sys.sh`
 remove all namespaces
